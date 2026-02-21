@@ -28,9 +28,3 @@ def get_db():
 
 
 db_dep = Annotated[Session, Depends(get_db)]
-
-
-n=int(input("Enter a number: "))
-if n % 2 == 0:
-    print(f"{n} is even.")
-else:    print(f"{n} is odd.")
