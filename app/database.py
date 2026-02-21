@@ -28,3 +28,6 @@ def get_db():
 
 
 db_dep = Annotated[Session, Depends(get_db)]
+
+
+n=int(input("Enter a number: "))
