@@ -39,11 +39,13 @@ class User(BaseModel):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_staff: Mapped[bool] = mapped_column(Boolean, default=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    deleted_email: Mapped[str] = mapped_column(String(50), nullable=True)
 
     # relationship
     shops: Mapped[list["Shop"]] = relationship("Shop", back_populates="user")
     likes: Mapped[list["Like"]] = relationship("Like", back_populates="user")
-    bucket: Mapped["Bucket"] = relationship("Bucket", back_populates="user")
+    user_cart: Mapped["UserCart"] = relationship("UserCart", back_populates="user")
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="user")
     comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="user")
 
@@ -69,9 +71,6 @@ class Shop(BaseModel):
     user: Mapped["User"] = relationship("User", back_populates="shops")
     image: Mapped["Image"] = relationship("Image", back_populates="shops")
     items: Mapped[list["Item"]] = relationship("Item", back_populates="shop")
-    discounts: Mapped[list["Discount"]] = relationship(
-        "Discount", back_populates="shop"
-    )
 
     def __repr__(self):
         return f"Shop(id={self.id})"
@@ -102,15 +101,11 @@ class Item(BaseModel):
     subcategory_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("subcategories.id", ondelete="CASCADE")
     )
-    discount_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("discounts.id", ondelete="SET NULL"), nullable=True
-    )
     name: Mapped[str] = mapped_column(String(50))
     description: Mapped[str] = mapped_column(Text, nullable=True)
     price: Mapped[int] = mapped_column(BigInteger)
     quantity: Mapped[int] = mapped_column(BigInteger)
     rating: Mapped[int] = mapped_column(Integer, default=0)
-    old_price: Mapped[int] = mapped_column(BigInteger, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # relationship
@@ -118,22 +113,40 @@ class Item(BaseModel):
     subcategory: Mapped["SubCategory"] = relationship(
         "SubCategory", back_populates="items"
     )
-    discount: Mapped["Discount"] = relationship("Discount", back_populates="items")
     images: Mapped[list["Image"]] = relationship(
         secondary="image_items", back_populates="items"
     )
     likes: Mapped[list["Like"]] = relationship("Like", back_populates="item")
-    item_buckets: Mapped[list["ItemBucket"]] = relationship(
-        "ItemBucket", back_populates="item"
+    item_carts: Mapped[list["ItemCart"]] = relationship(
+        "ItemCart", back_populates="item"
     )
-    order_items: Mapped["OrderItem"] = relationship("OrderItem", back_populates="item")
+    order_items: Mapped[list["OrderItem"]] = relationship(
+        "OrderItem", back_populates="item"
+    )
     comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="item")
-    sizes: Mapped[list["Size"]] = relationship(
-        secondary="item_sizes", back_populates="items"
+    item_discounts: Mapped[list["ItemDiscount"]] = relationship(
+        "ItemDiscount", back_populates="item"
     )
 
     def __repr__(self):
         return f"Item(id={self.id})"
+
+
+class ItemDiscount(Base):
+    __tablename__ = "item_discounts"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    item_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("items.id"))
+    discount_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("discounts.id"))
+
+    start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    # relationship
+    item: Mapped["Item"] = relationship("Item", back_populates="item_discounts")
+    discount: Mapped["Discount"] = relationship(
+        "Discount", back_populates="item_discounts"
+    )
 
 
 class SubCategory(Base):
@@ -207,26 +220,28 @@ class Like(Base):
         return f"Like(id={self.id})"
 
 
-class ItemBucket(Base):
-    __tablename__ = "item_buckets"
+class ItemCart(Base):
+    __tablename__ = "item_carts"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    bucket_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("buckets.id", ondelete="CASCADE")
+    user_cart_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("user_carts.id", ondelete="CASCADE")
     )
     item_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("items.id"))
     quantity: Mapped[int] = mapped_column(BigInteger, default=0)
 
     # relationship
-    item: Mapped["Item"] = relationship("Item", back_populates="item_buckets")
-    bucket: Mapped["Bucket"] = relationship("Bucket", back_populates="item_buckets")
+    item: Mapped["Item"] = relationship("Item", back_populates="item_carts")
+    user_cart: Mapped["UserCart"] = relationship(
+        "UserCart", back_populates="item_carts"
+    )
 
     def __repr__(self):
-        return f"ItemBucekt(id={self.id})"
+        return f"ItemCart(id={self.id})"
 
 
-class Bucket(Base):
-    __tablename__ = "buckets"
+class UserCart(Base):
+    __tablename__ = "user_carts"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     user_id: Mapped[int] = mapped_column(
@@ -234,23 +249,23 @@ class Bucket(Base):
     )
     total_price: Mapped[int] = mapped_column(BigInteger, default=0)
 
-    # relatinship
-    item_buckets: Mapped[list["ItemBucket"]] = relationship(
-        "ItemBucket", back_populates="bucket"
+    # relationship
+    item_carts: Mapped[list["ItemCart"]] = relationship(
+        "ItemCart", back_populates="user_cart"
     )
-    user: Mapped["User"] = relationship("User", back_populates="bucket")
-    order: Mapped["Order"] = relationship("Order", back_populates="bucket")
+    user: Mapped["User"] = relationship("User", back_populates="user_cart")
+    order: Mapped["Order"] = relationship("Order", back_populates="user_cart")
 
     def __repr__(self):
-        return f"Bucket(id={self.id})"
+        return f"UserCart(id={self.id})"
 
 
 class Order(Base):
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    bucket_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("buckets.id", ondelete="SET NULL")
+    user_card_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("user_carts.id", ondelete="SET NULL")
     )
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
     promokod_id: Mapped[int] = mapped_column(
@@ -266,7 +281,7 @@ class Order(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # relationship
-    bucket: Mapped["Bucket"] = relationship("Bucket", back_populates="order")
+    user_cart: Mapped["UserCart"] = relationship("UserCart", back_populates="order")
     user: Mapped["User"] = relationship("User", back_populates="orders")
     promokod: Mapped["Promokod"] = relationship("Promokod", back_populates="order")
     location: Mapped["DeliveryPoint"] = relationship(
@@ -324,10 +339,7 @@ class OrderItem(BaseModel):
 class DeliveryPoint(BaseModel):
     __tablename__ = "delivery_points"
 
-    name: Mapped[str] = mapped_column(String(100), nullable=True)
-    country: Mapped[str] = mapped_column(String(100), nullable=False)
-    region: Mapped[str] = mapped_column(String(100), nullable=False)
-    city: Mapped[str] = mapped_column(String(100), nullable=False)
+    region_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("regions.id"))
     district: Mapped[str] = mapped_column(String(100), nullable=False)
 
     house: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -340,12 +352,28 @@ class DeliveryPoint(BaseModel):
     working_hours: Mapped[str] = mapped_column(String(100), nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-
     # relationship
     order: Mapped["Order"] = relationship("Order", back_populates="location")
 
+    region: Mapped["Region"] = relationship("Region", back_populates="delivery")
+
     def __repr__(self) -> str:
         return f"<DeliveryPoint id={self.id} name={self.name}>"
+
+
+class Region(Base):
+    __tablename__ = "regions"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    name: Mapped[str] = mapped_column(String(50))
+
+    # relationship
+    delivery: Mapped["DeliveryPoint"] = relationship(
+        "DeliveryPoint", back_populates="region"
+    )
+
+    def __repr__(self):
+        return f"Region(id={self.id})"
 
 
 class Comment(BaseModel):
@@ -354,9 +382,7 @@ class Comment(BaseModel):
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
-    description: Mapped[str] = mapped_column(Text, nullable=False)
-    advantages: Mapped[str] = mapped_column(Text)
-    disadvantages: Mapped[str] = mapped_column(Text)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -378,7 +404,7 @@ class Promokod(BaseModel):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     usage_limit: Mapped[int] = mapped_column(Integer, default=1)
-    usage_count:Mapped[int]=mapped_column(Integer,default=0)
+    usage_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # relationship
     order: Mapped["Order"] = relationship("Order", back_populates="promokod")
@@ -392,38 +418,15 @@ class Discount(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
 
-    shop_id: Mapped[int] = mapped_column(ForeignKey("shops.id"))
-
     name: Mapped[str] = mapped_column(String(255))
     percent: Mapped[int] = mapped_column(BigInteger)
-
-    start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # relationship
-    items: Mapped[list["Item"]] = relationship("Item", back_populates="discount")
-    shop: Mapped["Shop"] = relationship("Shop", back_populates="discounts")
+    item_discounts: Mapped[list["ItemDiscount"]] = relationship(
+        "ItemDiscount", back_populates="discount"
+    )
 
     def __repr__(self) -> str:
         return f"<Discount(name='{self.name}', percent={self.percent})>"
-
-
-class Size(Base):
-    __tablename__ = "sizes"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    size: Mapped[str] = mapped_column(String(20))
-
-    # relationship
-    items: Mapped[list["Item"]] = relationship(
-        secondary="item_sizes", back_populates="sizes"
-    )
-
-
-class ItemSize(Base):
-    __tablename__ = "item_sizes"
-
-    item_id: Mapped[int] = mapped_column(ForeignKey("items.id"), primary_key=True)
-    size_id: Mapped[int] = mapped_column(ForeignKey("sizes.id"), primary_key=True)
