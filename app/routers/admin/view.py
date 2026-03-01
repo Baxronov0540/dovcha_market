@@ -1,6 +1,33 @@
+import os
+import uuid
+import pathlib
 from starlette_admin.contrib.sqla import ModelView
+from starlette_admin import FileField
+from fastapi import Request,UploadFile
+from typing import Dict,Any
+from app.models import Image
+from app.utils import password_hash
+
+UPLOAD_DIR="media_data"
 
 
+def looks_hashed(p: str):
+    return p.startswith("$argon2")
+
+def extract_upload(v) -> UploadFile | None:
+    if v is None:
+        return None
+    if isinstance(v, UploadFile):
+        return v
+    if isinstance(v, tuple):
+        for item in v:
+            if isinstance(item, UploadFile):
+                return item
+    return None
+
+def _safe_ext(filename: str) -> str:
+    _, ext = os.path.splitext(filename or "")
+    return (ext.lower()[:10] if ext else "")
 class UserAdmin(ModelView):
     identity = "user"
     fields = [
@@ -21,13 +48,30 @@ class UserAdmin(ModelView):
     exclude_fields_from_edit = ["id", "created_at", "updated_at"]
     exclude_fields_from_list = ["password_hash", "deleted_email"]
 
+    async def before_edit(
+        self, request: Request, data: Dict[str, Any], obj: Any
+    ) -> None:
+        if "password_hash" in data:
+            pwd = data.get("password_hash")
+            if not pwd:
+                return  
+            if not looks_hashed(pwd):
+                obj.password_hash = password_hash(pwd)
+    async def before_create(
+        self, request: Request, data: Dict[str, Any], obj: Any
+    ) -> None:
+        pwd = data.get("password_hash")
+        if pwd and not looks_hashed(pwd):
+            obj.password_hash = password_hash(pwd)  # ASOSIY FIX
+    
+
 
 class ShopAdmin(ModelView):
     identity = "shop"
     fields = [
         "id",
         "user",
-        "image",
+        FileField("img_file",label="image"),
         "name",
         "description",
         "rating",
@@ -43,6 +87,61 @@ class ShopAdmin(ModelView):
         "updated_at",
     ]
     exclude_fields_from_edit = ["id", "created_at", "updated_at"]
+    async def before_create(
+        self, request: Request, data: Dict[str, Any], obj: Any
+    ) -> None:
+        
+        session = request.state.session
+        
+        up: UploadFile | None = extract_upload(data.get("img_file"))
+        if up:
+            os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+            filename = f"{uuid.uuid4().hex}{_safe_ext(up.filename)}"
+            path = os.path.join(UPLOAD_DIR, filename)
+
+            content = await up.read()
+            with open(path, "wb") as f:
+                f.write(content)
+
+        
+            url = f"/{UPLOAD_DIR}/{filename}"
+
+            media = Image(url=url)
+            session.add(media)
+            session.flush([media])   # media.id olish uchun
+
+            obj.avatar_id = media.id
+
+        data.pop("img_file", None)
+
+
+    async def before_edit(
+        self, request: Request, data: Dict[str, Any], obj: Any
+    ) -> None:
+
+        session = request.state.session
+        
+        up: UploadFile | None = extract_upload(data.get("img_file"))
+        if up:
+            os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+            filename = f"{uuid.uuid4().hex}{_safe_ext(up.filename)}"
+            path = os.path.join(UPLOAD_DIR, filename)
+
+            content = await up.read()
+            with open(path, "wb") as f:
+                f.write(content)
+
+            url = f"/static/uploads/{filename}"
+
+            media = Image(url=url)
+            session.add(media)
+            session.flush([media])
+
+            obj.avatar_id = media.id
+    
+        data.pop("img_file", None)
 
 
 class ImageAdmin(ModelView):
