@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     EMAIL_PASSWORD: str
     REDIS_URL: str = "redis://localhost:6379/2"
 
+    # media
+    MEDIA_PATH: str = "media/"
+
     class Config:
         env_file = ".env"
 

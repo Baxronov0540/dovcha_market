@@ -66,6 +66,7 @@ class Shop(BaseModel):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     rating: Mapped[int] = mapped_column(Integer, default=0)
     order_count: Mapped[int] = mapped_column(BigInteger, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
 
     # relationship
     user: Mapped["User"] = relationship("User", back_populates="shops")
@@ -211,6 +212,9 @@ class Like(Base):
     )
     item_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("items.id", ondelete="CASCADE")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=func.now()
     )
 
     # relationship
@@ -384,6 +388,7 @@ class Comment(BaseModel):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, default=0)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -431,3 +436,12 @@ class Discount(Base):
 
     def __repr__(self) -> str:
         return f"<Discount(name='{self.name}', percent={self.percent})>"
+
+
+class TokenBlancList(Base):
+    __tablename__ = "token_blanc_lists"
+
+    token: Mapped[str] = mapped_column(String, primary_key=True)
+
+    def __repr__(self):
+        return self.token

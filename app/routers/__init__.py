@@ -1,17 +1,25 @@
-from .auth import auth_router
+from .auth import router as auth_router
 from .item import router as item_router
 from .shop import router as shop_router
-from .cart import router as cart_router
-from .item_cart import router as item_cart_router
-from .category import router as category_router
-from .subcategory import router as subcategory_router
+
+from .users import router as user_router
+
+from .order import router as order_router
+
+from .payment import router as payment_router
+from .Comment import router as comment_router
+from .location import router as location_router
+from .discount import router as discount_router
+
 
 __all__ = [
     "auth_router",
     "item_router",
     "shop_router",
-    "cart_router",
-    "item_cart_router",
-    "category_router",
-    "subcategory_router",
+    "order_router",
+    "user_router",
+    "payment_router",
+    "comment_router",
+    "location_router",
+    "discount_router",
 ]

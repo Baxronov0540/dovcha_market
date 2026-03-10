@@ -3,9 +3,9 @@ from pydantic import BaseModel
 
 
 class ShopCreateRequest(BaseModel):
-    image_id: int | None = None
+    # image_id: int | None = None
     name: str
-    description: str | None = None
+    # description: str | None = None
 
 
 class ShopCreateResponse(BaseModel):
@@ -17,3 +17,9 @@ class ShopCreateResponse(BaseModel):
     rating: int
     order_count: int
     created_at: datetime
+
+
+class ShopUpdateRequest(BaseModel):
+    # image_id: int | None = None
+    name: str | None
+    description: str | None = None

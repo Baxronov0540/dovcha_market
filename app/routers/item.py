@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 
 from app.database import db_dep
-from app.models import Item
-from app.schemas import current_user_jwt_dep, ItemCreateRequest, ItemCreateResponse
+from app.models import Item, Shop
+from app.schemas import ItemCreateRequest, ItemCreateResponse, ItemUpdateRequest
+from app.dependencies import current_user_jwt_dep
 
-
-router = APIRouter(prefix="/item", tags=["Item"])
+router = APIRouter(prefix="/product", tags=["Product"])
 
 
 @router.post("/create", response_model=ItemCreateResponse)
@@ -16,13 +17,12 @@ async def item_create(
 ):
     # TODO: remove admin check. Users can also add
     # TODO: check if user has any shop. Link product to shop
-    if (
-        not current_user.is_active
-        or not current_user.is_admin
-        or not current_user.is_staff
-    ):
-        raise HTTPException(status_code=403, detail="sizda bunday huquq yuq!")
-
+    stmt = select(Shop).where(
+        Shop.id == create_data.shop_id, Shop.user_id == current_user.id
+    )
+    shop = session.execute(stmt).scalars().first()
+    if not shop:
+        raise HTTPException(status_code=404, detail="User shop not found")
     item = Item(
         shop_id=create_data.shop_id,
         subcategory_id=create_data.subcategory_id,
@@ -39,32 +39,59 @@ async def item_create(
     return item
 
 
-@router.get("/list", response_model=list[ItemCreateResponse])
-async def item_list(session: db_dep, current_user: current_user_jwt_dep):
-    # TODO: fix - items should be ordered in some way (rating, price, name query paramda berish)
-    # TODO: filter by is_active
-    # TODO: add pagination
+from enum import Enum
 
-    if not current_user.is_active:
-        raise HTTPException(status_code=404, detail="User not found.")
+
+class ItemOrderEnum(str, Enum):
+    rating = "rating"
+    price = "price"
+    name = "name"
+    category = "category"
+
+
+class ItemOrderEnum(str, Enum):
+    rating = "rating"
+    price = "price"
+    name = "name"
+
+
+@router.get("/list", response_model=list[ItemCreateResponse])
+async def product_list(
+    session: db_dep,
+    limit: int = 10,
+    offset: int = 0,
+    category_id: int | None = None,
+    order_by: ItemOrderEnum = Query(default=ItemOrderEnum.rating),
+):
 
     stmt = select(Item)
-    res = session.execute(stmt).scalars()
+
+    if category_id:
+        stmt = stmt.where(Item.subcategory_id == category_id)
+
+    if order_by == ItemOrderEnum.price:
+        stmt = stmt.order_by(Item.price)
+
+    if order_by == ItemOrderEnum.rating:
+        stmt = stmt.order_by(Item.rating.desc())
+
+    if order_by == ItemOrderEnum.name:
+        stmt = stmt.order_by(Item.name)
+
+    stmt = stmt.where(Item.is_active == True)
+
+    stmt = stmt.limit(limit).offset(offset)
+
+    res = session.execute(stmt).scalars().all()
 
     return res
 
 
-@router.get("/one", response_model=ItemCreateResponse)
-async def item_one(session: db_dep, current_user: current_user_jwt_dep, item_id: int):
+@router.get("/one/{item_id}/", response_model=ItemCreateResponse)
+async def item_one(session: db_dep, item_id: int):
     # TODO: move item_id to path param
     # TODO: so only admins can see the item detail?
-    # TODO: admin checks should be in dependency
-    if (
-        not current_user.is_active
-        or not current_user.is_admin
-        or not current_user.is_staff
-    ):
-        raise HTTPException(status_code=403, detail="user is not active ")
+    # TODO: admin checks should be in dependency\
 
     stmt = select(Item).where(Item.id == item_id)
     res = session.execute(stmt).scalars().first()
@@ -74,33 +101,22 @@ async def item_one(session: db_dep, current_user: current_user_jwt_dep, item_id:
     return res
 
 
-@router.get("/filter", response_model=list[ItemCreateResponse])
-async def item_search(db: db_dep, title):
-    # TODO: remove this API. Filter occurs in list
-    stmt = select(Item).where(Item.name.ilike(f"%{title}%"))
-    item = db.execute(stmt).scalars().all()
-
-    return item
-
-
-@router.get(
-    "/search",
-    response_model=list[ItemCreateResponse],
-    summary="bi itemni category,is_active va name bo;yicha qidirish!!",
-)
-async def search(
-    db: db_dep, name: str | None, subcategory_id: int | None, is_active: bool | None
+@router.put("/update")
+async def update_product(
+    session: db_dep, current_user: current_user_jwt_dep, data: ItemUpdateRequest
 ):
-    # TODO: remove this API - search occurs in list
+    stmt = (
+        select(Item)
+        .options(joinedload(Item.shop))
+        .where(Shop.user_id == current_user.id)
+    )
+    item = session.execute(stmt).scalars().first()
+    update_data = data.model_dump(exclude_unset=True)
 
-    if is_active is not None:
-        stmt = select(Item).where(Item.is_active == is_active)
-    if name:
-        stmt = select(Item).where(Item.name.ilike(f"%{name}%"))
+    for key, value in update_data.items():
+        setattr(item, key, value)
 
-    if subcategory_id:
-        stmt = select(Item).where(Item.subcategory_id == subcategory_id)
-
-    item = db.execute(stmt).scalars().all()
+    session.commit()
+    session.refresh(item)
 
     return item

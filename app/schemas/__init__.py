@@ -3,13 +3,18 @@ from .auth_schema import (
     UserRegisterResponse,
     UserLoginRequest,
     UserProfilResponse,
+    RefreshTokenRequest,
+    UserProfilUpdateRequest,
 )  # noqa
-from .dependencies import current_user_jwt_dep
 from .item import ItemCreateRequest, ItemCreateResponse, ItemUpdateRequest
-from .shop import ShopCreateRequest, ShopCreateResponse
+from .shop import ShopCreateRequest, ShopCreateResponse, ShopUpdateRequest
 from .cart import UserCartCreateResponset, ItemCartsIn
-from .category import CategoryCreateRequest, SubcategoryCreateRequest
-
+from .order import OrderCreateRequest
+from .payment import PaymentCreate
+from .like import LikeCreateRequest, LikeCreateResponse
+from .comment import CommentCreateRequest, CommentCreateResponse
+from .discount import DiscountCreateRequest, ItemDiscountCreateRequest
+from .location import LocationCreateResponse
 
 __all__ = [
     "UserRegisterRequest",
@@ -26,4 +31,15 @@ __all__ = [
     "ItemCartsIn",
     "CategoryCreateRequest",
     "SubcategoryCreateRequest",
+    "RefreshTokenRequest",
+    "UserProfilUpdateRequest",
+    "OrderCreateRequest",
+    "PaymentCreate",
+    "LikeCreateRequest",
+    "LikeCreateResponse",
+    "CommentCreateRequest",
+    "CommentCreateResponse",
+    "DiscountCreateRequest",
+    "ItemDiscountCreateRequest",
+    "LocationCreateResponse",
 ]

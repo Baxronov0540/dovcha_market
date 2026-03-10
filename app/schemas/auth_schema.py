@@ -27,3 +27,13 @@ class UserProfilResponse(BaseModel):
     is_active: bool
     is_staff: bool
     is_admin: bool
+
+
+class UserProfilUpdateRequest(BaseModel):
+    email: EmailStr | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str

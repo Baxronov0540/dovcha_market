@@ -22,7 +22,7 @@ from app.models import (
     Promokod,
     Discount,
 )
-from app.routers.admin.view import * # noqa
+from app.routers.admin.view import *  # noqa
 from app.routers.admin.auth import JSONAuthProvider
 
 admin = Admin(
