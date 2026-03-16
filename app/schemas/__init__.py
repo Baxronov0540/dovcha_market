@@ -7,7 +7,14 @@ from .auth_schema import (
     UserProfilUpdateRequest,
 )  # noqa
 from .item import ItemCreateRequest, ItemCreateResponse, ItemUpdateRequest
-from .shop import ShopCreateRequest, ShopCreateResponse, ShopUpdateRequest
+from .shop import (
+    ShopCreateRequest,
+    ShopCreateResponse,
+    ShopUpdateRequest,
+    ShopCommentCreateRequest,
+    ShopCommentCreateResponse,
+    ShopCommentListResponse,
+)
 from .cart import UserCartCreateResponset, ItemCartsIn
 from .order import OrderCreateRequest
 from .payment import PaymentCreate
@@ -27,6 +34,10 @@ __all__ = [
     "ItemUpdateRequest",
     "ShopCreateRequest",
     "ShopCreateResponse",
+    "ShopUpdateRequest",
+    "ShopCommentCreateRequest",
+    "ShopCommentCreateResponse",
+    "ShopCommentListResponse",
     "UserCartCreateResponset",
     "ItemCartsIn",
     "CategoryCreateRequest",

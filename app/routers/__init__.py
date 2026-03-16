@@ -8,8 +8,10 @@ from .order import router as order_router
 
 from .payment import router as payment_router
 from .Comment import router as comment_router
+from .shop_comment import router as shop_comment_router
 from .location import router as location_router
 from .discount import router as discount_router
+from .statistics import router as statistics_router
 
 
 __all__ = [
@@ -20,6 +22,8 @@ __all__ = [
     "user_router",
     "payment_router",
     "comment_router",
+    "shop_comment_router",
     "location_router",
     "discount_router",
+    "statistics_router",
 ]
