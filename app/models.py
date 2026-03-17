@@ -48,6 +48,9 @@ class User(BaseModel):
     user_cart: Mapped["UserCart"] = relationship("UserCart", back_populates="user")
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="user")
     comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="user")
+    shop_comments: Mapped[list["ShopComment"]] = relationship(
+        "ShopComment", back_populates="user"
+    )
 
     def __repr__(self):
         return f"User(id={self.id})"
@@ -72,6 +75,9 @@ class Shop(BaseModel):
     user: Mapped["User"] = relationship("User", back_populates="shops")
     image: Mapped["Image"] = relationship("Image", back_populates="shops")
     items: Mapped[list["Item"]] = relationship("Item", back_populates="shop")
+    shop_comments: Mapped[list["ShopComment"]] = relationship(
+        "ShopComment", back_populates="shop"
+    )
 
     def __repr__(self):
         return f"Shop(id={self.id})"
@@ -398,6 +404,32 @@ class Comment(BaseModel):
 
     def __repr__(self) -> str:
         return f"Comment(id={self.id!r}, user_id={self.user_id!r})"
+
+
+class ShopComment(BaseModel):
+    __tablename__ = "shop_comments"
+    __table_args__ = (
+        UniqueConstraint("user_id", "shop_id", name="unique_user_shop_comment"),
+    )
+
+    shop_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("shops.id", ondelete="CASCADE")
+    )
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE")
+    )
+
+    text: Mapped[str] = mapped_column(Text, nullable=True)
+    rating: Mapped[int] = mapped_column(Integer, default=0)
+
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # relationship
+    shop: Mapped["Shop"] = relationship("Shop", back_populates="shop_comments")
+    user: Mapped["User"] = relationship("User", back_populates="shop_comments")
+
+    def __repr__(self) -> str:
+        return f"ShopComment(id={self.id!r}, user_id={self.user_id!r}, shop_id={self.shop_id!r})"
 
 
 class Promokod(BaseModel):

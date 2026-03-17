@@ -9,8 +9,10 @@ from app.routers import (
     order_router,
     payment_router,
     comment_router,
+    shop_comment_router,
     location_router,
     discount_router,
+    statistics_router,
 )
 from app.middleware import DBSessionMiddleware
 
@@ -26,8 +28,10 @@ app.include_router(item_router)
 app.include_router(order_router)
 app.include_router(payment_router)
 app.include_router(comment_router)
+app.include_router(shop_comment_router)
 app.include_router(location_router)
 app.include_router(discount_router)
+app.include_router(statistics_router)
 app.add_middleware(DBSessionMiddleware)
 
 

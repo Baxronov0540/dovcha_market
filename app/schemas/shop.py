@@ -23,3 +23,27 @@ class ShopUpdateRequest(BaseModel):
     # image_id: int | None = None
     name: str | None
     description: str | None = None
+
+
+class ShopCommentCreateRequest(BaseModel):
+    text: str | None = None
+    rating: int
+
+
+class ShopCommentCreateResponse(BaseModel):
+    id: int
+    user_id: int
+    shop_id: int
+    text: str | None
+    rating: int
+    created_at: datetime
+
+
+class ShopCommentListResponse(BaseModel):
+    id: int
+    user_id: int
+    shop_id: int
+    text: str | None
+    rating: int
+    created_at: datetime
+    updated_at: datetime
