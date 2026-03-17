@@ -7,7 +7,7 @@ from app.schemas import (
     UserCartCreateResponset,
 )
 from app.dependencies import current_user_jwt_dep
-from app.models import ItemCart, UserCart, Item
+from app.models import ItemCart, UserCart, Item,Order,OrderItem
 from app.database import db_dep
 # TODO: dependencies.py should be in app/ folder
 
@@ -93,6 +93,7 @@ async def cart_add(
             quantity=create_data.quantity,
         )
         session.add(item_cart)
+        session.flush()
 
     stmt = select(ItemCart).where(ItemCart.user_cart_id == user_cart.id)
     cart_items = session.execute(stmt).scalars().all()
@@ -116,3 +117,8 @@ async def cart_list(db: db_dep, current_user: current_user_jwt_dep):
     stmt = select(UserCart).where(UserCart.user_id == current_user.id)
     res = db.execute(stmt).scalars().first()
     return res
+
+@router.patch("/cart/clear")
+async def cart_clear(current_user:current_user_jwt_dep,session:db_dep):
+    
+    stmt=select(UserCart).where
