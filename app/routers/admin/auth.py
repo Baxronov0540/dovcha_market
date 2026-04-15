@@ -29,8 +29,8 @@ class JSONAuthProvider(AuthProvider):
             raise LoginFailed("Invalid Password. ")
         access_token, refresh_token = generate_jwt_tokens(user.id)
         token = refresh_token if remember_me else access_token
-        expire_delta = (
-            settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+        expire_delta = (            settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+
             if remember_me
             else settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )

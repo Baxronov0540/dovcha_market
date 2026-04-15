@@ -19,6 +19,7 @@ class ItemCreateResponse(BaseModel):
     name: str
     description: str | None
     price: int
+    discounted_price: int | None = None  # narx chegirma bilan
     quantity: int
     rating: int
     is_active: bool

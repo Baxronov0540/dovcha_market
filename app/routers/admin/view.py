@@ -43,6 +43,7 @@ class UserAdmin(ModelView):
         "is_staff",
         "is_admin",
         "is_deleted",
+        "is_verified",
         "deleted_email",
         "created_at",
         "updated_at",

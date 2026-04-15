@@ -100,10 +100,10 @@ async def login_user(db: db_dep, login_data: UserLoginRequest):
     if not verify_password(user.password_hash, login_data.password_hash):
         raise HTTPException(status_code=401, detail="Invalid password")
 
-    access_token, refresh_token = generate_jwt_tokens(user.id)
+    access_token, refresh_token = generate_jwt_tokens(user.id,)
     t = TokenBlancList(token=access_token)
-    db.add(t)
     db.commit()
+    db.add(t)
 
     return {"access_token": access_token, "refresh_token": refresh_token}
 

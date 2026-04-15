@@ -18,6 +18,9 @@ router = APIRouter(prefix="/shop", tags=["Shop"])
 async def shop_create(
     session: db_dep, current_user: current_user_jwt_dep, create_data: ShopCreateRequest
 ):
+    if not current_user.is_verified:
+        raise HTTPException(status_code=403, detail="Only verified users can create shops")
+
     shop = Shop(user_id=current_user.id, name=create_data.name)
     session.add(shop)
     session.commit()

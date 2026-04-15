@@ -9,7 +9,11 @@ from app.schemas import (
 from app.dependencies import current_user_jwt_dep
 from app.models import ItemCart, UserCart, Item,Order,OrderItem
 from app.database import db_dep
-# TODO: dependencies.py should be in app/ folder
+from pathlib import Path
+from fastapi import UploadFile
+import uuid
+from app.config import settings
+from app.models import Image
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -25,7 +29,7 @@ async def profile_update(
     current_user: current_user_jwt_dep,
     update_data: UserProfilUpdateRequest,
 ):
-    # TODO: update profile
+    # Done: update profile
 
     for key, value in update_data.model_dump(exclude_unset=True).items():
         setattr(current_user, key, value)
@@ -34,16 +38,46 @@ async def profile_update(
     return current_user
 
 
-# @router.post("/avatar/upload/")
-# async def avatar_upload():
-#     # TODO: avatar upload API
-#     pass
+@router.post("/avatar/upload/")
+async def avatar_upload(
+    file: UploadFile, session: db_dep, current_user: current_user_jwt_dep
+):
+    file_ext = Path(file.filename).suffix.lower()
+
+    if file_ext not in [".jpg", ".png", ".jpeg"]:
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+
+    content = await file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Max size 2 mb")
+
+    path = Path(settings.MEDIA_PATH)
+    path.mkdir(exist_ok=True)
+
+    filename = f"{uuid.uuid4()}{file_ext}"
+    res = path / filename
+
+    with open(res, "wb") as buffer:
+        buffer.write(content)
+
+    image = Image(url=f"{settings.MEDIA_PATH}/{filename}")
+    session.add(image)
+    session.flush()
+
+    current_user.avatar_id = image.id
+    session.commit()
+    session.refresh(current_user)
+    return current_user
 
 
-# @router.delete("/avatar/delete/")
-# async def avatar_delete():
-#     # TODO: avatar delete API
-#     pass
+@router.delete("/avatar/delete/")
+async def avatar_delete(session: db_dep, current_user: current_user_jwt_dep):
+    if not current_user.avatar_id:
+        raise HTTPException(status_code=400, detail="User has no avatar")
+    
+    current_user.avatar_id = None
+    session.commit()
+    return {"message": "Avatar deleted"}
 
 
 @router.post("/me/deactivate/")

@@ -1,7 +1,7 @@
 [project]
 name = "dovcha-market"
 version = "0.1.0"
-description = "Add your description here"
+description = "Dovcha Market — FastAPI asosidagi onlayn savdo platformasi (e-commerce REST API)"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -15,8 +15,12 @@ dependencies = [
     "pydantic-settings>=2.13.1",
     "python-jose>=3.5.0",
     "redis>=7.2.0",
-    "ruff>=0.15.2",
     "sqlalchemy>=2.0.46",
     "starlette-admin>=0.16.0",
     "uvicorn>=0.41.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.10",
 ]

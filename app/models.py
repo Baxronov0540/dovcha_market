@@ -39,8 +39,12 @@ class User(BaseModel):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_staff: Mapped[bool] = mapped_column(Boolean, default=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_email: Mapped[str] = mapped_column(String(50), nullable=True)
+    avatar_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("images.id", ondelete="SET NULL"), nullable=True
+    )
 
     # relationship
     shops: Mapped[list["Shop"]] = relationship("Shop", back_populates="user")
@@ -51,6 +55,7 @@ class User(BaseModel):
     shop_comments: Mapped[list["ShopComment"]] = relationship(
         "ShopComment", back_populates="user"
     )
+    avatar: Mapped["Image"] = relationship("Image", foreign_keys=[avatar_id])
 
     def __repr__(self):
         return f"User(id={self.id})"
@@ -190,22 +195,14 @@ class Category(Base):
         return f"Category(id={self.id})"
 
 
-class ImageItem(Base):
-    __tablename__ = "image_items"
-    # TODO: remove this table, m2m with secondary already handles it.
-    # You have no additional field to handle
+from sqlalchemy import Table, Column
 
-    image_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("images.id"), primary_key=True
-    )
-    item_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("items.id"), primary_key=True
-    )
-
-    def __repr__(self):
-        return f"ImageItem(item_id={self.item_id} , image_id={self.image_id})"
-
-
+image_items = Table(
+    "image_items",
+    Base.metadata,
+    Column("image_id", BigInteger, ForeignKey("images.id"), primary_key=True),
+    Column("item_id", BigInteger, ForeignKey("items.id"), primary_key=True),
+)
 class Like(Base):
     __tablename__ = "likes"
     __table_args__ = (
